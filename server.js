@@ -16,7 +16,35 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'Esagenius 3D Quote API' });
 });
 
-// POST preventivo
+// GET preventivo in base al volume (senza STL)
+app.get('/api/quote', (req, res) => {
+  const volume = parseFloat(req.query.volume);
+
+  if (isNaN(volume) || volume <= 0) {
+    return res.status(400).json({
+      success: false,
+      errorCode: 'BAD_VOLUME',
+      message: 'Volume non valido. Usa ?volume=numero in cm3, es: /api/quote?volume=120'
+    });
+  }
+
+  const infill = req.query.infill || 'ultra';
+  const leadTime = req.query.leadTime || 'standard';
+
+  const pricing = calculatePrice({
+    volume_cm3: volume,
+    infill,
+    leadTime
+  });
+
+  return res.json({
+    success: true,
+    model: { volume_cm3: volume },
+    pricing
+  });
+});
+
+// POST preventivo da file STL
 app.post('/api/quote-3d', upload.single('file'), async (req, res) => {
   try {
     const { infill = 'ultra', leadTime = 'standard' } = req.body;
